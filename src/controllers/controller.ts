@@ -14,7 +14,7 @@ const analyzePR = async (req: Request, res: Response) => {
     const { repo_url, pr_number } = req.body;
     
     // Need to remove later
-    const github_token = process.env.GITHUB_TOKEN
+    const github_token = process.env.GITHUB_FINEGRAINED_TOKEN
 
     if (!repo_url || !pr_number || !github_token) {
         res.status(400).json({

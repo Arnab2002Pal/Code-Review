@@ -1,16 +1,18 @@
 import { GitHubPullRequest } from "../interface";
 import axios from "axios";
-import * as fs from "fs"
-
+import { create_file } from "../utils/util";
 
 export const analyzePullRequest = async ({ repo_url, pr_number, github_token }: GitHubPullRequest) => {
-    const result = await axios.get(`${repo_url}/pull/${pr_number}/files`)
-    fs.writeFile("file.txt", result.data, err => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log("File created successfully");
-            
-        }}
-    )
+    const owner = repo_url.split('/')[3]
+    const repo = repo_url.split('/')[4]
+    
+    const result = await axios.get(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number}/files`, {
+        headers: {
+            'Authorization': `Bearer ${github_token}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+        }
+    })
+
+    await create_file(result)
 }
