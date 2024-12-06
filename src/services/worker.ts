@@ -5,6 +5,7 @@ import { GitHubPullRequest } from "../interface";
 const worker = new Worker('code-analysis', async job =>{
     try {
         const { repo_url, pr_number, github_token }: GitHubPullRequest = job.data;
+        
         const analysedResult = await analyzePullRequest({repo_url, pr_number, github_token})
 
     } catch (error) {
