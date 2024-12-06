@@ -6,5 +6,5 @@ export interface GitHubPullRequest {
 
 export interface Github_Response {
     filename: string;
-    patch: string
+    patch: string;
 }
