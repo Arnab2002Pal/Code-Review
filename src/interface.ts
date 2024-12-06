@@ -3,3 +3,8 @@ export interface GitHubPullRequest {
     pr_number: number;
     github_token: string;
 }
+
+export interface Github_Response {
+    filename: string;
+    patch: string;
+}
