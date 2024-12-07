@@ -50,7 +50,7 @@ export const create_file = async (result: any, filename: string, flag: string) =
 
         fs.writeFile(filePath, result, err => {
             if (err) {
-                console.error(err);
+                console.error("Error at creating summary file: ",err);
                 return false
             }
         })
