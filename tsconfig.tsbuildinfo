@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/interface.ts","./src/controllers/controller.ts","./src/routes/router.ts","./src/services/ai-agent.ts","./src/services/worker.ts","./src/utils/file_operation.ts","./src/utils/gpt_service.ts"],"version":"5.7.2"}
+{"root":["./src/index.ts","./src/interface.ts","./src/controllers/controller.ts","./src/routes/router.ts","./src/services/ai-agent.ts","./src/services/config.ts","./src/services/worker.ts","./src/utils/file_operation.ts","./src/utils/gpt_service.ts"],"version":"5.7.2"}
