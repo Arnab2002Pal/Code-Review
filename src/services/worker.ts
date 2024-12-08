@@ -45,10 +45,10 @@ const worker = new Worker('code-analysis', async job => {
         })
     }
 
-}, { connection: { host: 'localhost', port: 6379 } })
+}, { connection: { host: 'localhost', port: process.env.REDIS_PORT as unknown as number || 6379 } })
 
 worker.on("ready", () => {
-    console.log("Worker is ready and connected to Redis!");
+    console.log(`Worker is ready and Redis listening at ${process.env.REDIS_PORT as unknown as number}`);
 });
 
 worker.on("active", (job)=>{

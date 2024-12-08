@@ -12,7 +12,10 @@
     "dev:redis": "npx nodemon src/services/worker.ts",
     "dev": "concurrently \"nodemon src/index.ts\" \"nodemon src/services/worker.ts\"",
     "start": "npm run build && npm run start:both",
-    "prisma": "cd ./src/prisma && npx prisma studio"
+    "prisma": "cd ./prisma && npx prisma studio",
+    "db:generate":"cd ./prisma && npx prisma generate",
+    "db:migrate":"cd ./prisma && npx prisma migrate dev",
+    "db:deploy":"cd ./prisma && npx prisma migrate deploy"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,58 @@
+services:
+  postgres_database:
+    image: 'postgres:latest'
+    container_name: postgres-db
+    ports:
+        - 6500:5432
+    volumes:
+      - postgres-db_data:/ data/db
+    env_file:
+        - .env
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  redis:
+    image: redis:alpine  
+    container_name: redis-server
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-server_data:/data/server
+    env_file:
+      - .env
+    networks:
+      - backend
+  
+  app:
+    build: .
+    container_name: code_reviewer
+    ports:
+      - 3001:3001
+    env_file:
+      - .env
+    depends_on:
+    - postgres_database
+    - redis
+    networks:
+      - backend
+
+  migrate:
+    build: .
+    container_name: db_migration
+    env_file:
+      - .env
+    command: ["npm", "run", "db:deploy"]
+    depends_on:
+      - postgres_database
+    networks:
+      - backend
+
+volumes:
+  postgres-db_data:
+  redis-server_data:
+
+networks:
+  backend:
+    driver: bridge

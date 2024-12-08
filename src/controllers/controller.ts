@@ -1,22 +1,9 @@
 import { Request, Response } from "express";
-import { Queue } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import { GitHubPullRequest } from "../interface";
+import { analyzeQueue } from "../services/redis_config";
 
 const client = new PrismaClient()
-// import { Github_PR } from "../interface";
-
-// Redis connection for BullMQ
-const analyzeQueue = new Queue("code-analysis", {
-    connection: {
-        host: "localhost",
-        port: 6379,
-    },
-});
-
-analyzeQueue.on("error", (error) => {
-    console.error("An error occurred with the queue:", error.message);
-});
 
 
 const analyzePR = async (req: Request, res: Response) => {
