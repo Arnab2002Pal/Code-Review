@@ -11,7 +11,7 @@ model TaskResult {
   id          String    @id @default(uuid())
   taskId      Int       @unique
   status      Boolean
-  file_name   String?
+  summary     Json
   message     String?
   createdAt   DateTime  @default(now())
 }

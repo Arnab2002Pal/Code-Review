@@ -5,10 +5,8 @@ import { PrismaClient } from "@prisma/client";
 
 const client = new PrismaClient()
 
-const worker = new Worker('code-analysis', async job => {
-    try {
-        console.log("-----WORKER START-----");
-        
+const worker = new Worker('code-analysis', async job => {    
+    try {        
         const { repo_url, pr_number, github_token }: GitHubPullRequest = job.data;
 
         const analysedResult = await analyzePullRequest({ repo_url, pr_number, github_token })
@@ -18,7 +16,7 @@ const worker = new Worker('code-analysis', async job => {
                 data: {
                     taskId: Number(job.id),
                     status: analysedResult.status,
-                    file_name: analysedResult.file_name,
+                    summary: {},
                     message: analysedResult.message
                 }
             })
@@ -28,7 +26,7 @@ const worker = new Worker('code-analysis', async job => {
             data: {
                 taskId: Number(job.id),
                 status: analysedResult.status,
-                file_name: analysedResult.file_name,
+                summary: analysedResult.code_summary || {},
                 message: analysedResult.message
             }
         })
@@ -39,13 +37,13 @@ const worker = new Worker('code-analysis', async job => {
             data: {
                 taskId: Number(job.id),
                 status: false,
-                file_name: null,
+                summary: {},
                 message: "Worker error: " + error
             }
         })
     }
 
-}, { connection: { host: 'localhost', port: process.env.REDIS_PORT as unknown as number || 6379 } })
+}, { connection: { host: process.env.REDIS_HOST as string, port: process.env.REDIS_PORT as unknown as number || 6379 } })
 
 worker.on("ready", () => {
     console.log(`Worker is ready and Redis listening at ${process.env.REDIS_PORT as unknown as number}`);
