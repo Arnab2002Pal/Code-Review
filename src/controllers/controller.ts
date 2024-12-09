@@ -139,7 +139,7 @@ const resultPR = async (req: Request, res: Response) => {
         } else {
             return res.status(200).json({
                 success: true,
-                file_name: task.file_name,
+                summary: task.summary,
                 message: task.message
             })
 
