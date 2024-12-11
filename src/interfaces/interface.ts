@@ -1,7 +1,9 @@
-enum Status_Code {
-    success = 200,
-    error = 500
-    
+export enum Status_Code {
+    SUCCESS = 200,
+    BAD_REQUEST = 400,
+    UNAUTHORIZED = 401,
+    NOT_FOUND = 404,
+    INTERNAL_ERROR = 500
 }
 
 export interface GitHubPullRequest {

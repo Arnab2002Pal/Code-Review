@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import { redisClient } from "../services/redis_config"
-import { Task_Data } from "../interface"
+import { Task_Data } from "../interfaces/interface"
 
 const client = new PrismaClient()
 
