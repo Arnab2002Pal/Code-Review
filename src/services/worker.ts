@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { analyzePullRequest } from "./ai-agent";
-import { GitHubPullRequest } from "../interface";
+import { GitHubPullRequest } from "../interfaces/interface";
 import { PrismaClient } from "@prisma/client";
 import { redisClient } from "./redis_config";
 import { initialize_DatabaseCache } from "../utils/utility_operation";

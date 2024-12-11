@@ -1,4 +1,4 @@
-import { GitHubPullRequest } from "../interface";
+import { GitHubPullRequest } from "../interfaces/interface";
 import axios from "axios";
 import { formatting } from "../utils/file_operation";
 import { ai_review } from "../utils/ai_service";
@@ -23,7 +23,7 @@ export const analyzePullRequest = async ({ repo_url, pr_number, github_token }: 
         if (!formatted_result) {
             throw new Error
         }
-        
+
         const code_summary = await ai_review(formatted_result)
 
         if (code_summary == "" || code_summary == null) return {
@@ -40,7 +40,7 @@ export const analyzePullRequest = async ({ repo_url, pr_number, github_token }: 
 
     } catch (error) {
         console.error("Error at AI-Agent", error);
-        
+
         return {
             status: false,
             code_summary: null,

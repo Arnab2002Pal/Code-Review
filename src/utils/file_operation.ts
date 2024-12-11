@@ -1,4 +1,4 @@
-import { Github_Response } from "../interface";
+import { Github_Response } from "../interfaces/interface";
 
 export const formatting = async (result: any) => {
     let output = "";
@@ -17,6 +17,6 @@ export const formatting = async (result: any) => {
         output += `\n${"-".repeat(50)}\n\n`; // Separator for readability
     });
 
-    console.log("PR file created successfully");
+    console.log("Text cleaned up completed successfully!!!");
     return output;
 }
