@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { GitHubPullRequest } from "../interface";
-import { analyzeQueue } from "../services/redis_config";
+import { analyzeQueue, redisClient } from "../services/redis_config";
+import { cacheData } from "../utils/utility_operation";
 
 const client = new PrismaClient()
-
 
 const analyzePR = async (req: Request, res: Response) => {
     const { repo_url, pr_number, github_token }: GitHubPullRequest = req.body;
@@ -18,7 +18,15 @@ const analyzePR = async (req: Request, res: Response) => {
     }
 
     try {
-        const task = await analyzeQueue.add("analysis-pr", { repo_url, pr_number, github_token });
+        const task = await analyzeQueue.add("analysis-pr", { repo_url, pr_number, github_token }, {
+            attempts: 3,
+            backoff: {
+                type: "exponential",
+                delay: 10000,
+            },
+            removeOnComplete: true,
+            removeOnFail: true
+        });
 
         if (!task) {
             res.status(500).json({
@@ -47,17 +55,29 @@ const analyzePR = async (req: Request, res: Response) => {
 
 const taskStatus = async (req: Request, res: Response) => {
     try {
-        const taskId :string = req.params.task_id;
+        const taskId: string = req.params.task_id;
         const job = await analyzeQueue.getJob(taskId);
 
-        if (!job) {
+        const db_data = await client.taskResult.findUnique({
+            where: {
+                taskId: Number(taskId),
+            },
+        });
+
+        // If the job is not found and no data exists in the database, return a 404 error
+        if (!job && !db_data) {
             return res.status(404).json({
                 success: false,
                 message: "Task not found. Please check the task ID and try again.",
             });
         }
 
-        const state = await job.getState();
+        let state: string | null = null;
+
+        // If the job exists, get its state
+        if (job) {
+            state = await job.getState();
+        }
 
         switch (state) {
             case "waiting":
@@ -75,34 +95,27 @@ const taskStatus = async (req: Request, res: Response) => {
                     message: "Your task is currently being processed.",
                 });
 
-            case "completed":
-                if (job.returnvalue === null) {
+            case "failed":
+                return res.status(200).json({
+                    success: false,
+                    task_id: taskId,
+                    message: job?.failedReason || "Your task has failed to process. Please try again.",
+                });
+
+            default:
+                // If state is null or unknown, provide a fallback
+                if (!db_data) {
                     return res.status(200).json({
                         success: false,
                         task_id: taskId,
-                        message: "Your task has completed but there was no result to return.",
+                        message: "Task completed, but no result found in the database.",
                     });
                 }
 
                 return res.status(200).json({
                     success: true,
                     task_id: taskId,
-                    file_name: job.returnvalue.file_name,
-                    message: job.returnvalue.message,
-                });
-
-            case "failed":
-                return res.status(200).json({
-                    success: false,
-                    task_id: taskId,
-                    message: job.failedReason || "Your task has failed to process. Please try again.",
-                });
-
-            default:
-                return res.status(500).json({
-                    success: false,
-                    task_id: taskId,
-                    message: "An unknown error occurred while checking the task status.",
+                    message: "Task completed successfully.",
                 });
         }
     } catch (error) {
@@ -118,33 +131,28 @@ const taskStatus = async (req: Request, res: Response) => {
 const resultPR = async (req: Request, res: Response) => {
     const { task_id } = req.params
     try {
-        const task = await client.taskResult.findUnique({
-            where: {
-                taskId: Number(task_id)
-            }
-        })
 
-        if (!task) {
-            return res.status(404).json({
-                success: false,
-                message: "Task not found. Please check the task ID and try again."
-            })
-        }
+        const cache = await redisClient.get(`cached_job:${task_id}`)
 
-        if (!task.status) {
-            return res.status(400).json({
-                success: false,
-                message: `Task failed. ${task.message}.`
-            })
-        } else {
+        if (cache) {
+            const parsed_cache = JSON.parse(cache);
             return res.status(200).json({
                 success: true,
-                summary: task.summary,
-                message: task.message
-            })
-
+                task_id: parsed_cache.taskId,
+                summary: parsed_cache.summary,
+                message: parsed_cache.message,
+            });
         }
 
+        const renew_cache = await cacheData(Number(task_id));
+
+        // Send the response to the user after caching
+        return res.status(200).json({
+            success: true,
+            task_id: renew_cache.taskId,
+            summary: renew_cache.summary,
+            message: renew_cache.message,
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({
