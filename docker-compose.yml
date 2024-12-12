@@ -1,18 +1,4 @@
 services:
-  postgres_database:
-    image: 'postgres:latest'
-    container_name: postgres-db
-    ports:
-        - 6501:5432
-    volumes:
-      - postgres-db_data:/data/db
-    env_file:
-        - .env
-    depends_on:
-      - redis
-    networks:
-      - backend
-
   redis:
     image: redis:alpine  
     container_name: redis-server
@@ -20,37 +6,34 @@ services:
       - 6379:6379
     volumes:
       - redis-server_data:/data/server
+    command: ["redis-server", "--appendonly", "yes"]
     env_file:
       - .env
     networks:
       - backend
   
   app:
-    build: .
+    image: 'arnabpal342002/code_review_webhook'
     container_name: code_reviewer
     ports:
       - 3000:3000
     env_file:
       - .env
     depends_on:
-    - postgres_database
     - redis
     networks:
       - backend
 
   migrate:
-    build: .
+    image: 'arnabpal342002/code_review_webhook'
     container_name: db_migration
     env_file:
       - .env
     command: ["npm", "run", "db:deploy"]
-    depends_on:
-      - postgres_database
     networks:
       - backend
 
 volumes:
-  postgres-db_data:
   redis-server_data:
 
 networks:
