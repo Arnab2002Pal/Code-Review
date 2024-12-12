@@ -4,35 +4,76 @@ export const schema = {
     description: "Review of issues and solutions",
     type: SchemaType.OBJECT,
     properties: {
-        suggestions: {
-            type: SchemaType.ARRAY,
-            items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                    issue: {
-                        type: SchemaType.STRING,
-                        description: "Description of the issue",
-                        nullable: false,
+        results: {
+            type: SchemaType.OBJECT,
+            properties: {
+                files: {
+                    type: SchemaType.ARRAY,
+                    items: {
+                        type: SchemaType.OBJECT,
+                        properties: {
+                            name: {
+                                type: SchemaType.STRING,
+                                description: "Name of the file",
+                                nullable: false,
+                            },
+                            issues: {
+                                type: SchemaType.ARRAY,
+                                items: {
+                                    type: SchemaType.OBJECT,
+                                    properties: {
+                                        type: {
+                                            type: SchemaType.STRING,
+                                            description: "Type of issue (e.g., style, bug)",
+                                            nullable: false,
+                                        },
+                                        line: {
+                                            type: SchemaType.NUMBER,
+                                            description: "Line number where the issue occurs",
+                                            nullable: false,
+                                        },
+                                        description: {
+                                            type: SchemaType.STRING,
+                                            description: "Description of the issue",
+                                            nullable: false,
+                                        },
+                                        suggestion: {
+                                            type: SchemaType.STRING,
+                                            description: "Suggested solution for the issue",
+                                            nullable: false,
+                                        },
+                                    },
+                                    required: ["type", "line", "description", "suggestion"],
+                                },
+                            },
+                        },
+                        required: ["name", "issues"],
                     },
-                    solution: {
-                        type: SchemaType.STRING,
-                        description: "Suggested solution for the issue",
-                        nullable: false,
-                    },
-                    code: {
-                        type: SchemaType.STRING,
-                        description: "Code snippet for the solution",
-                        nullable: false,
-                    }
                 },
-                required: ["issue", "solution"],
+                summary: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        total_files: {
+                            type: SchemaType.NUMBER,
+                            description: "Total number of files reviewed",
+                            nullable: false,
+                        },
+                        total_issues: {
+                            type: SchemaType.NUMBER,
+                            description: "Total number of issues found",
+                            nullable: false,
+                        },
+                        critical_issues: {
+                            type: SchemaType.NUMBER,
+                            description: "Number of critical issues",
+                            nullable: false,
+                        },
+                    },
+                    required: ["total_files", "total_issues", "critical_issues"],
+                },
             },
-        },
-        summary: {
-            type: SchemaType.STRING,
-            description: "Summary of the review",
-            nullable: false,
+            required: ["files", "summary"],
         },
     },
-    required: ["suggestions", "summary"],
+    required: ["results"],
 };
