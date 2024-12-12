@@ -1,11 +1,9 @@
-FROM node:20
+FROM node:alpine
 
 WORKDIR /app
 
 # Install required dependencies, including OpenSSL
-RUN apt-get update && apt-get install -y \
-    openssl \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache openssl
 
 # Set up the app
 COPY package*.json ./

@@ -28,3 +28,25 @@ jobs:
 
     - name: Verify Pushed Image
       run: docker pull arnabpal342002/code_review_webhook:latest
+
+    - name: Copy docker-compose.yml to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "backendNode/docker-compose.yaml"
+        target: "/home/ubuntu/backend"
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master # Master specifies the version
+      with:
+        host: ${{ secrets.SSH_HOST }} # Need to add to github action
+        username: ${{ secrets.SSH_USERNAME }} # Need to add to github action
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /home/ubuntu/backend/webhook 
+          sudo docker pull arnabpal342002/code_review_webhook:latest
+          sudo docker compose down
+          sudo docker compose pull
+          sudo docker compose up -d
