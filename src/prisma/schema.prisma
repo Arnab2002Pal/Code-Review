@@ -2,14 +2,15 @@ generator client {
     provider = "prisma-client-js"
 }
 
+
 datasource db {
     provider = "postgresql"
     url = env("DATABASE_URL")
 }
 
 model TaskResult {
-  id          String @id @default (uuid())
-  taskId      Int @unique
+  id          String  @id @default (uuid())
+  taskId      Int     @unique
   status      Boolean
   summary     Json
   message     String ?

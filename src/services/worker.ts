@@ -6,6 +6,7 @@ import { redisClient } from "./redis_config";
 import { initialize_DatabaseCache } from "../utils/utility_operation";
 
 const client = new PrismaClient()
+const mode = process.env.NODE_ENV?.trim()
 
 const worker = new Worker('code-analysis', async job => {
     const { repo_url, pr_number, github_token }: GitHubPullRequest = job.data;
@@ -47,14 +48,13 @@ const worker = new Worker('code-analysis', async job => {
 
 }, {
     connection: {
-        // host: 'localhost',
-        host: process.env.REDIS_HOST as string,
+        host: mode === 'Production' ? process.env.REDIS_HOST as unknown as string : 'localhost',
         port: process.env.REDIS_PORT as unknown as number || 6379
     }
 })
 
 worker.on("ready", () => {
-    console.log(`Worker is ready and Redis listening at ${process.env.REDIS_PORT as unknown as number}`);
+    console.log(`Worker Ready: '${mode}' and Port: ${process.env.REDIS_PORT as unknown as number}`);
 });
 
 worker.on("active", (job) => {

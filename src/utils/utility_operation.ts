@@ -47,7 +47,6 @@ export const cacheData = async (taskID: number) => {
 
     if (data) {
         await redisClient.setEx(`cached_job:${taskID}`, Number(process.env.CACHE_TIMING), JSON.stringify(taskData))
-
         return taskData
     } else {
         throw new Error(`Task is not found with the taskID: ${taskID}`)

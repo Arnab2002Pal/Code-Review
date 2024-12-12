@@ -11,6 +11,7 @@ app.use(bodyParser.json())
 app.use('/api/v1', router)
 
 const port = process.env.SERVER_PORT || 3001
+const mode = process.env.NODE_ENV
 app.listen(port, () => {
-    console.log("Server listening on port:", port);
+    console.log(`Mode: ${mode?.trim()}, Server Port: ${port}`);
 })
