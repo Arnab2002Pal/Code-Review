@@ -35,7 +35,7 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: "webhook/docker-compose.yaml"
+        source: "webhook/docker-compose.yml"
         target: "/home/ubuntu/backend"
 
     - name: Deploy to EC2
