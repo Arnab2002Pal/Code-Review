@@ -6,6 +6,13 @@ import { cacheData } from "../utils/utility_operation";
 
 const client = new PrismaClient()
 
+const testRoute = async (req: Request, res: Response) => {
+    return res.status(Status_Code.SUCCESS).json({
+        success: true,
+        message: "API endpoint is working correctly"
+    })
+}
+
 const analyzePR = async (req: Request, res: Response) => {
     const { repo_url, pr_number, github_token }: GitHubPullRequest = req.body;
 
@@ -163,6 +170,7 @@ const resultPR = async (req: Request, res: Response) => {
 }
 
 export {
+    testRoute,
     analyzePR,
     taskStatus,
     resultPR
