@@ -46,6 +46,7 @@ This project is designed for developers who want automated and reliable code rev
 2. Set up the environment variables (.env file).
 
 ```bash
+GITHUB_TOKEN=gitub_token
 DATABASE_URL=your_postgres_connection_string
 GEMINI_API_KEY=your_api_key
 REDIS_URL=your_redis_connection_string
@@ -65,7 +66,12 @@ Use Postman or a similar tool to test the endpoints:
 
 1. **Analyze a pull request:**
 ```bash
-POST http://code-review.arnab-personal.tech/api/analyze_pr  
+POST http://code-review.arnab-personal.tech/api/analyze_pr
+{
+    "repo_url": "https://github.com/<username>/<repo_name>/pull/<pull_request_number>",
+    "pr_number": pull_request_number,
+    "github_token": "<Github_Token>"
+}
 ```
 
 2. **Check task status:**
