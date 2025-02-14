@@ -13,8 +13,8 @@ services:
       - backend
   
   app:
+    build: .
     image: 'arnabpal342002/code_review_webhook'
-    container_name: code_reviewer
     ports:
       - 3000:3000
     env_file:

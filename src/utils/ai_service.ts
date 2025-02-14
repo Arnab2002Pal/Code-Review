@@ -1,23 +1,24 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai"
-import dotenv from 'dotenv';
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import { schema } from "../interfaces/gemini_interface";
+import dotenv from 'dotenv';
+import { generateContentWithRetry } from "./utility_operation";
 
 dotenv.config()
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-export const ai_review = async (filename: string) => {
-    console.log(`----Initialized-----`);
+export const ai_review = async (file: string) => {
+    console.log(`[AI] ----Initialized-----`);
 
     const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash", generationConfig: {
+        model: "gemini-2.0-flash", generationConfig: {
             responseMimeType: "application/json",
             responseSchema: schema
         }
     });
     const prompt = `You are a helpful assistant. Review the following pull request containing multiple file changes and analyze each file for style issues, bugs, performance improvements, and best practices.
-    This is the file: ${filename} 
-    Provide the results in the following schema format:
+    This is the content, Provide the results in the following schema format:
+    ${file} 
 
 - An array of objects under the 'files' key, each containing the following properties:
   - name: The name of the file (String).
@@ -27,12 +28,10 @@ export const ai_review = async (filename: string) => {
     - description: A brief description of the issue.
     - suggestion: Suggested solution or improvement for the issue.`;
 
-
-    const result = await model.generateContent(prompt);
     let parsedSummary = {};
-    parsedSummary = JSON.parse(result.response.text());
+    parsedSummary = await generateContentWithRetry(model, prompt)
 
-    console.log(`----Completed-----`);
+    console.log(`[AI] ----Completed-----`);
     return parsedSummary;
 }
 
