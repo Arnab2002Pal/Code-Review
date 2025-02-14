@@ -3,7 +3,7 @@ import { Github_Response } from "../interfaces/interface";
 export const formatting = async (result: any) => {
     let output = "";
 
-    const filtered_response = await result.data.map((data: Github_Response) => ({
+    const filtered_response = await result.map((data: Github_Response) => ({
         filename: data.filename,
         patch: data.patch
     }));
@@ -14,9 +14,9 @@ export const formatting = async (result: any) => {
         // Append file name and its changes (or a placeholder if no changes)
         output += `File: ${filename}\n`;
         output += `Changes:\n${patch || "No changes detected"}\n`;
-        output += `\n${"-".repeat(50)}\n\n`; // Separator for readability
+        output += `\n${"-".repeat(50)}\n\n`;
     });
 
-    console.log("Text cleaned up completed successfully!!!");
+    console.log("[SERVER] File cleaned up completed");
     return output;
 }

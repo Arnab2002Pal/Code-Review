@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { GitHubPullRequest, Status_Code } from "../interfaces/interface";
-import { analyzeQueue, redisClient } from "../services/redis_config";
+import { GitHubPullRequest, Status_Code, User } from "../interfaces/interface";
+import { fetchQueue, redisClient } from "../services/redis_config";
 import { cacheData } from "../utils/utility_operation";
 
 const client = new PrismaClient()
@@ -14,22 +14,49 @@ const testRoute = async (req: Request, res: Response) => {
 }
 
 const analyzePR = async (req: Request, res: Response) => {
-    const { repo_url, pr_number, github_token }: GitHubPullRequest = req.body;
-
-    if (!repo_url || !pr_number || !github_token) {
-        res.status(Status_Code.BAD_REQUEST).json({
-            success: false,
-            message: "Missing required fields",
-        });
-        return
-    }
-
     try {
-        const task = await analyzeQueue.add("analysis-pr", { repo_url, pr_number, github_token }, {
+        const { action, number: pr_number, pull_request, repository } = req.body;
+
+        // only 'opened' PR events are processed
+        if (action !== "opened") return res.sendStatus(204);
+
+        const { diff_url, head, comments_url } = pull_request;
+        const { full_name } = repository
+
+        /*
+        Requirements:
+        -- comments_url: Adding comments to a Pull Request requires the following:
+        -   GitHub Personal Access Token (PAT)
+        -   Content-Type: application/json
+        -   Accept: application/vnd.github+json
+
+        -- Commenting on specific files requires:
+        -- https://api.github.com/repos/{owner}/{repo}/pulls/{number}/comments
+        -   GitHub Personal Access Token (PAT)
+        -   `commit_id`: The latest commit SHA
+        -   `body`: Comment content
+        -   `path`: File path in the PR
+        -   `line`: Line number for the comment
+        -   `side`: "LEFT" or "RIGHT" (diff side)
+        */
+
+        const user: User = {
+            full_name,
+            pr_number,
+            commit_id: head.sha,
+            comments_url,
+            github_token: ''
+        };
+
+        res.status(Status_Code.SUCCESS).json({
+            message: "Webhook received successfully"
+        });
+
+        const task = await fetchQueue.add("fetch-diff-task", { diff_url, user }, {
             attempts: 3,
             backoff: {
                 type: "exponential",
-                delay: 10000,
+                delay: 5000,
             },
             removeOnComplete: true,
             removeOnFail: true
@@ -43,18 +70,11 @@ const analyzePR = async (req: Request, res: Response) => {
             return
         }
 
-        res.status(Status_Code.SUCCESS).json({
-            success: true,
-            message: "Task added to queue successfully",
-            task_id: task.id
-        });
-        return
-
+        return;
     } catch (error: any) {
+        console.error("Error processing webhook:", error);
         res.status(Status_Code.INTERNAL_ERROR).json({
-            success: false,
-            message: "An error occurred while processing the request",
-            error: error.message,
+            message: "Webhook Failed"
         });
         return
     }
@@ -63,7 +83,7 @@ const analyzePR = async (req: Request, res: Response) => {
 const taskStatus = async (req: Request, res: Response) => {
     try {
         const taskId: string = req.params.task_id;
-        const job = await analyzeQueue.getJob(taskId);
+        const job = await fetchQueue.getJob(taskId);
 
         const db_data = await client.taskResult.findUnique({
             where: {

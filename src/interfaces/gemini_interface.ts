@@ -53,6 +53,11 @@ export const schema = {
                 summary: {
                     type: SchemaType.OBJECT,
                     properties: {
+                        comment: {
+                            type: SchemaType.STRING,
+                            description: "Small and concise description of the issue",
+                            nullable: false,
+                        },
                         total_files: {
                             type: SchemaType.NUMBER,
                             description: "Total number of files reviewed",
@@ -69,7 +74,7 @@ export const schema = {
                             nullable: false,
                         },
                     },
-                    required: ["total_files", "total_issues", "critical_issues"],
+                    required: ["comment","total_files", "total_issues", "critical_issues"],
                 },
             },
             required: ["files", "summary"],

@@ -23,3 +23,39 @@ export interface Task_Data {
     summary: any,
     message?: string
 }
+
+interface Issue {
+    line: number;
+    type: string;
+    suggestion: string;
+    description: string;
+}
+
+export interface FileReport {
+    name: string;
+    issues: Issue[];
+}
+
+interface Summary {
+    comment: string;
+    total_files: number;
+    total_issues: number;
+    critical_issues: number;
+}
+
+interface Results {
+    files: FileReport[];
+    summary: Summary;
+}
+
+export interface analysedResult {
+    results: Results;
+}
+
+export interface User {
+    full_name: string;
+    pr_number: number;
+    commit_id: string;
+    comments_url: string;
+    github_token: string;
+}
