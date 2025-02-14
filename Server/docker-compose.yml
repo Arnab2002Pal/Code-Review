@@ -3,7 +3,7 @@ services:
     image: redis:alpine  
     container_name: redis-server
     ports:
-      - 6379:6379
+      - 6378:6379
     volumes:
       - redis-server_data:/data/server
     command: ["redis-server", "--appendonly", "yes"]
@@ -14,9 +14,9 @@ services:
   
   app:
     build: .
-    image: 'arnabpal342002/code_review_webhook'
+    # image: 'arnabpal342002/code_review_webhook'
     ports:
-      - 3000:3000
+      - 3001:3001
     env_file:
       - .env
     depends_on:
@@ -25,7 +25,8 @@ services:
       - backend
 
   migrate:
-    image: 'arnabpal342002/code_review_webhook'
+    # image: 'arnabpal342002/code_review_webhook'
+    build: .
     container_name: db_migration
     env_file:
       - .env
