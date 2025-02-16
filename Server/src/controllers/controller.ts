@@ -13,6 +13,20 @@ const testRoute = async (req: Request, res: Response) => {
     })
 }
 
+const newUser = async (req: Request, res: Response) => {
+    try {
+        const { email, githubToken } = req.body;
+        console.log(req.body);
+        
+        res.status(Status_Code.SUCCESS).json({
+            email,
+            githubToken 
+        })
+    } catch (error) {
+        
+    }
+}
+
 const analyzePR = async (req: Request, res: Response) => {
     try {
         const { action, number: pr_number, pull_request, repository } = req.body;
@@ -191,6 +205,7 @@ const resultPR = async (req: Request, res: Response) => {
 
 export {
     testRoute,
+    newUser,
     analyzePR,
     taskStatus,
     resultPR

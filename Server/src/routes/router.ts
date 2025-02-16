@@ -1,5 +1,5 @@
 import express from "express";
-import { testRoute, analyzePR, resultPR, taskStatus } from "../controllers/controller";
+import { testRoute, newUser ,analyzePR, resultPR, taskStatus } from "../controllers/controller";
 
 const apiRouter = express.Router();
 const webhookRouter = express.Router();
@@ -7,6 +7,7 @@ const webhookRouter = express.Router();
 apiRouter.get('/', testRoute)
 // Endpoint to analyze a GitHub Pull Request
 // router.post('/analyze_pr', analyzePR)
+apiRouter.post('/new-user', newUser);
 apiRouter.get('/status/:task_id', taskStatus);
 apiRouter.get('/results/:task_id', resultPR)
 
