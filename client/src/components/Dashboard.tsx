@@ -10,10 +10,10 @@ const Dashboard = () => {
     const { data: session } = useSession()
     const [token, settoken] = useState("")
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault(); // Prevent default form submission
-        
-        const res = axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}new-user`,{
+
+        const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}new-user`, {
             email: session?.user?.email,
             githubToken: token,
         })

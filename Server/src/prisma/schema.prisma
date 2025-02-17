@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id       String   @id @default(uuid())
+  email    String   @unique
+  githubToken String
+
+  taskResults TaskResult[]
+}
+
 model TaskResult {
   id        String   @id @default(uuid())
   taskId    Int      @unique
@@ -14,4 +22,7 @@ model TaskResult {
   summary   Json
   message   String?
   createdAt DateTime @default(now())
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

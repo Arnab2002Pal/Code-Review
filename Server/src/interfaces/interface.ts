@@ -18,6 +18,7 @@ export interface Github_Response {
 }
 
 export interface Task_Data {
+    userId: string,
     taskId: number,
     status: boolean,
     summary: any,

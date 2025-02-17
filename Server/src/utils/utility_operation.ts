@@ -33,6 +33,7 @@ export function createQueue(name: string, config: { host: string, port: number }
 export async function initialize_DatabaseCache(id: any, analysedResult: any) {
     try {
         const taskData: Task_Data = {
+            userId:"asd",
             taskId: Number(id),
             status: analysedResult.status,
             summary: analysedResult.code_summary.results,
@@ -71,6 +72,7 @@ export async function cacheData(taskID: number) {
     }
 
     const taskData: Task_Data = {
+        userId: "",
         taskId: data.taskId,
         status: data.status,
         summary: data.summary,

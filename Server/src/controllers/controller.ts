@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { GitHubPullRequest, Status_Code, User } from "../interfaces/interface";
+import { Status_Code, User } from "../interfaces/interface";
 import { fetchQueue, redisClient } from "../services/redis_config";
 import { cacheData } from "../utils/utility_operation";
 
@@ -16,19 +16,50 @@ const testRoute = async (req: Request, res: Response) => {
 const newUser = async (req: Request, res: Response) => {
     try {
         const { email, githubToken } = req.body;
-        console.log(req.body);
-        
-        res.status(Status_Code.SUCCESS).json({
-            email,
-            githubToken 
+
+        const user = await client.user.findFirst({
+            where: {
+                email
+            }
         })
-    } catch (error) {
+        if(user) {
+            return res.status(Status_Code.BAD_REQUEST).json({
+                success: false,
+                message: "User already exists"
+            })
+        }
         
+        const newUser = await client.user.create({
+            data: {
+                email,
+                githubToken
+            }
+        })
+        if(!newUser){
+            res.status(Status_Code.INTERNAL_ERROR).json({
+                success: false,
+                message: "Failed to create new user. Please try again later."
+            })
+            return;
+        }
+        res.status(Status_Code.SUCCESS).json({
+            success: true,
+            newUser
+        })
+        return
+    } catch (error) {
+        res.status(Status_Code.BAD_REQUEST).json({
+            success: false,
+            message: "An error occurred while creating new user. Please try again later."
+        })
+        return;
     }
 }
 
 const analyzePR = async (req: Request, res: Response) => {
     try {
+        console.log(req.body);
+        
         const { action, number: pr_number, pull_request, repository } = req.body;
 
         // only 'opened' PR events are processed
