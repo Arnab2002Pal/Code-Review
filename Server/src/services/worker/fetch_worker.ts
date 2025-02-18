@@ -46,7 +46,7 @@ const fetchWorker = new Worker('code-analysis-queue', async job => {
                 removeOnFail: true
             }),
 
-            storeResultQueue.add("store-result-task", { taskId: job.id, analysedResult }, {
+            storeResultQueue.add("store-result-task", { userId: user.userId, taskId: job.id, analysedResult }, {
                 attempts: 3,
                 backoff: {
                     type: "exponential",

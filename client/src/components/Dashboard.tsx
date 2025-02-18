@@ -4,19 +4,46 @@ import React, { useState } from 'react'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import axios from 'axios'
+import { useRouter } from 'next/navigation'
 
 
 const Dashboard = () => {
     const { data: session } = useSession()
     const [token, settoken] = useState("")
+    const router = useRouter()
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault(); // Prevent default form submission
 
-        const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}new-user`, {
-            email: session?.user?.email,
-            githubToken: token,
-        })
+        try {
+            const gitResponse = await axios.get('https://api.github.com/user', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application / vnd.github + json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            })
+
+            if (gitResponse.status === 200 && gitResponse.data.user_view_type === "public") {
+                const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}new-user`, {
+                    email: session?.user?.email,
+                    github:{
+                        token,
+                        username: gitResponse.data.login,
+                        id: gitResponse.data.id
+                    }
+                })
+
+                if(res.status === 200){
+                    const user = res.data.user
+                    router.push('/user')
+                }
+            }
+
+        } catch (error) {
+
+        }
+
     }
 
     return (

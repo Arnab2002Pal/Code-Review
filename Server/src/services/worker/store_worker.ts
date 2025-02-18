@@ -7,11 +7,11 @@ const mode = process.env.NODE_ENV?.trim()
 const client = new PrismaClient()
 
 const storeWorker = new Worker('store-result-queue', async (job) => {
-    const { taskId, analysedResult } = job.data;
+    const { userId, taskId, analysedResult } = job.data;
     console.log("Inside store-result-queue");
     
     try {
-        return initialize_DatabaseCache(taskId, analysedResult)
+        return initialize_DatabaseCache(userId, taskId, analysedResult)
     } catch (error) {
         console.log("[STORE-WORKER] Error at Worker: ", error);
 
