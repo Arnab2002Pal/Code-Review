@@ -2,7 +2,7 @@ import dotenv from 'dotenv'
 import { Queue } from "bullmq"
 import { PrismaClient } from "@prisma/client"
 import { redisClient } from "../services/redis_config"
-import { analysedResult, FileReport, Status_Code, Task_Data, User } from "../interfaces/interface"
+import { AnalysedResult, FileReport, StatusCode, TaskData, User } from "../interfaces/interface"
 import axios from "axios"
 
 dotenv.config()
@@ -30,9 +30,10 @@ export function createQueue(name: string, config: { host: string, port: number }
 }
 
 // DATABASE-CACHER RELATED FUNCTIONS
-export async function initialize_DatabaseCache(id: any, analysedResult: any) {
+export async function initialize_DatabaseCache(userId: any, id: any, analysedResult: any) {
     try {
-        const taskData: Task_Data = {
+        const taskData: TaskData = {
+            userId: userId,
             taskId: Number(id),
             status: analysedResult.status,
             summary: analysedResult.code_summary.results,
@@ -46,6 +47,7 @@ export async function initialize_DatabaseCache(id: any, analysedResult: any) {
             client.taskResult.create({ data: taskData }),
             redisClient.setEx(`cached_job:${id}`, Number(process.env.CACHE_TIMING), JSON.stringify(taskData)),
         ]);
+        console.log('[STORE-WORKER] Completed insert into DB and Cache');
 
         return {
             id: dbEntry.id,
@@ -70,7 +72,8 @@ export async function cacheData(taskID: number) {
         throw new Error(`Task is not found with the taskID: ${taskID}`)
     }
 
-    const taskData: Task_Data = {
+    const taskData: TaskData = {
+        userId: data.id,
         taskId: data.taskId,
         status: data.status,
         summary: data.summary,
@@ -140,7 +143,7 @@ async function processPRFiles(full_name: string, pr_number: any, files: FileRepo
     console.log("[COMMENT-Worker] All files processed successfully.");
 }
 
-export function postAnalysisResult(user: User, data: analysedResult) {
+export function postAnalysisResult(user: User, data: AnalysedResult) {
     const { files, summary } = data.results;
     const comment = `${summary.comment},
                 Total Files: ${summary.total_files},
@@ -152,7 +155,7 @@ export function postAnalysisResult(user: User, data: analysedResult) {
         processPRFiles(user.full_name, user.pr_number, files, user.commit_id, token)
 
         return {
-            status: Status_Code.SUCCESS
+            status: StatusCode.SUCCESS
         }
     } catch (error) {
         console.log('[COMMENT-Worker]:', error);

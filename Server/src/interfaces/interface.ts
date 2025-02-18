@@ -1,4 +1,4 @@
-export enum Status_Code {
+export enum StatusCode {
     SUCCESS = 200,
     BAD_REQUEST = 400,
     UNAUTHORIZED = 401,
@@ -17,7 +17,8 @@ export interface Github_Response {
     patch: string;
 }
 
-export interface Task_Data {
+export interface TaskData {
+    userId: string,
     taskId: number,
     status: boolean,
     summary: any,
@@ -48,11 +49,12 @@ interface Results {
     summary: Summary;
 }
 
-export interface analysedResult {
+export interface AnalysedResult {
     results: Results;
 }
 
 export interface User {
+    userId: string;
     full_name: string;
     pr_number: number;
     commit_id: string;
