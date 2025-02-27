@@ -12,28 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Debug - List files
-        run: ls -la
-
-      - name: Debug - List server directory
-        run: ls -la server || echo "Server directory not found"
-
-      - name: Debug - List repository structure
-        run: ls -R
-
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: ./server
+        working-directory: Server
         run: npm install
 
       - name: Generate Prisma Client
-        working-directory: ./server
+        working-directory: Server
         run: npm run db:generate
 
       - name: Build
-        working-directory: ./server
+        working-directory: Server
         run: npm run build
