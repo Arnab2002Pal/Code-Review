@@ -13,8 +13,8 @@ services:
       - backend
   
   app:
-    build: .
-    # image: 'arnabpal342002/code_review_webhook'
+    # build: .
+    image: 'arnabpal342002/code_review_webhook'
     ports:
       - 3001:3001
     env_file:
