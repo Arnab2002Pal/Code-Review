@@ -1,20 +1,20 @@
 services:
   redis:
     image: redis:alpine  
-    container_name: redis-server
+    container_name: redis-code-reviewer
     ports:
-      - 6378:6379
+      - 6378:6378
     volumes:
       - redis-server_data:/data/server
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--port", "6378", "--appendonly", "yes"]
     env_file:
       - .env
     networks:
       - backend
   
   app:
-    # build: .
-    image: 'arnabpal342002/code_review_webhook'
+    build: .
+    # image: 'arnabpal342002/code_review_webhook'
     ports:
       - 3001:3001
     env_file:
@@ -25,7 +25,6 @@ services:
       - backend
 
   migrate:
-    # image: 'arnabpal342002/code_review_webhook'
     build: .
     container_name: db_migration
     env_file:

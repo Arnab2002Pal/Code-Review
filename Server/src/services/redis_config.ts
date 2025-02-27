@@ -3,17 +3,17 @@ import { createQueue } from "../utils/utility_operation";
 import { createClient } from "redis";
 dotenv.config()
 const mode = process.env.NODE_ENV?.trim()
-const devUrl = "redis://localhost:6379"
-const prodUrl = `redis://${process.env.REDIS_HOST}:6379`
+const devUrl = "redis://localhost:6378"
+const prodUrl = `redis://${process.env.REDIS_HOST}:6378`
 
 const queueConfig = {
     host: mode === 'Production' ? process.env.REDIS_HOST as string : "localhost",
-    port: process.env.REDIS_PORT as unknown as number || 6379,
+    port: process.env.REDIS_PORT as unknown as number || 6378,
 }
 
 export const redisConnection = {
     host: mode === 'Production' ? process.env.REDIS_HOST as unknown as string : 'localhost',
-        port: process.env.REDIS_PORT as unknown as number || 6379
+        port: process.env.REDIS_PORT as unknown as number || 6378
 }
 
 export const fetchQueue = createQueue("code-analysis-queue", queueConfig);
