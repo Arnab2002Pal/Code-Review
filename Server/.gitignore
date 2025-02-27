@@ -5,4 +5,3 @@ commented_file.ts
 .vscode
 test.txt
 sampleData.txt
-.github/workflows.deploy-stage.yml

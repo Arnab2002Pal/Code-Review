@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { StatusCode, User } from "../interfaces/interface";
-import { fetchQueue, redisClient } from "../services/redis_config";
+import { fetchQueue, postCommentsQueue, redisClient, storeResultQueue } from "../services/redis_config";
 import { cacheData } from "../utils/utility_operation";
 
 const client = new PrismaClient()
@@ -55,6 +55,54 @@ const newUser = async (req: Request, res: Response) => {
             message: "An error occurred while creating new user. Please try again later."
         })
         return;
+    }
+}
+
+const checkToken = async (req: Request, res: Response) => {    
+    try {
+        const email = req.query.email as string;
+        
+        if(!email){
+            res.status(StatusCode.NOT_FOUND).json({ 
+                success: false,
+                message: "Email is required"
+            })
+            return
+        }
+
+        const existUser = await client.user.findUnique({
+            where: {
+                email
+            }
+        });
+
+        if (!existUser) {
+            res.status(StatusCode.NOT_FOUND).json({
+                success: false,
+                message: "User not found"
+            })
+            return
+        }        
+        const isTokenPresent = existUser.githubToken ? true : false
+
+        if(isTokenPresent){
+            res.status(StatusCode.SUCCESS).json({
+                success: true,
+                message: "Token is present"
+            })
+        } else {
+            res.status(StatusCode.NOT_FOUND).json({
+                success: false,
+                message: "Token is not present"
+            })
+        }
+        
+
+    } catch (error) {
+        res.status(StatusCode.INTERNAL_ERROR).json({
+            success: false,
+            message: "An error occurred while checking the token. Please try again later."
+        })
     }
 }
 
@@ -143,8 +191,10 @@ const analyzePR = async (req: Request, res: Response) => {
 const taskStatus = async (req: Request, res: Response) => {
     try {
         const taskId: string = req.params.task_id;
-        const job = await fetchQueue.getJob(taskId);
-
+        const fetchjob = await fetchQueue.getJob(taskId);
+        const commentjob = await postCommentsQueue.getJob(taskId);
+        const storeJob = await storeResultQueue.getJob(taskId);
+        
         const db_data = await client.taskResult.findUnique({
             where: {
                 taskId: Number(taskId),
@@ -152,7 +202,7 @@ const taskStatus = async (req: Request, res: Response) => {
         });
 
         // If the job is not found and no data exists in the database, return a 404 error
-        if (!job && !db_data) {
+        if (!fetchjob && !db_data) {
             return res.status(StatusCode.NOT_FOUND).json({
                 success: false,
                 message: "Task not found. Please check the task ID and try again.",
@@ -160,11 +210,20 @@ const taskStatus = async (req: Request, res: Response) => {
         }
 
         let state: string | null = null;
+        let state1: string | null = null;
+        let state2: string | null = null;
 
         // If the job exists, get its state
-        if (job) {
-            state = await job.getState();
+        if (fetchjob && commentjob && storeJob) {
+            state = await fetchjob.getState();
+            state1 = await commentjob.getState();
+            state2 = await storeJob.getState();
         }
+
+        console.log("Fetch:", state);
+        console.log("comment:", state1);
+        console.log("Store:", state2);
+        
 
         switch (state) {
             case "waiting":
@@ -186,7 +245,7 @@ const taskStatus = async (req: Request, res: Response) => {
                 return res.status(StatusCode.SUCCESS).json({
                     success: false,
                     task_id: taskId,
-                    message: job?.failedReason || "Your task has failed to process. Please try again.",
+                    message: fetchjob?.failedReason || "Your task has failed to process. Please try again.",
                 });
 
             default:
@@ -252,6 +311,7 @@ const resultPR = async (req: Request, res: Response) => {
 export {
     testRoute,
     newUser,
+    checkToken,
     analyzePR,
     taskStatus,
     resultPR
