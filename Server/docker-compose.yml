@@ -1,11 +1,11 @@
 services:
   redis:
     image: redis:alpine  
-    container_name: redis-code-reviewer
+    container_name: redis-server
     ports:
       - 6378:6378
     volumes:
-      - redis-server_data:/data/server
+      - redis-code-review-server_data:/data/server
     command: ["redis-server", "--port", "6378", "--appendonly", "yes"]
     env_file:
       - .env
@@ -20,7 +20,7 @@ services:
     env_file:
       - .env
     depends_on:
-    - redis
+      - redis
     networks:
       - backend
 
@@ -34,7 +34,7 @@ services:
       - backend
 
 volumes:
-  redis-server_data:
+  redis-code-review-server_data:
 
 networks:
   backend:
