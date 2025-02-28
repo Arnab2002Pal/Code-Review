@@ -25,7 +25,8 @@ services:
       - backend
 
   migrate:
-    build: .
+    # build: .
+    image: 'arnabpal342002/code_review_webhook'
     container_name: db_migration
     env_file:
       - .env
