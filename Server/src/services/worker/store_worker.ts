@@ -8,7 +8,6 @@ const client = new PrismaClient()
 
 const storeWorker = new Worker('store-result-queue', async (job) => {
     const { userId, taskId, analysedResult } = job.data;
-    console.log("Inside store-result-queue");
     
     try {
         return initialize_DatabaseCache(userId, taskId, analysedResult)
