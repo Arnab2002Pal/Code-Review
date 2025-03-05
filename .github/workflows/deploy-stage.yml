@@ -45,7 +45,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          cd /home/ubuntu/backend/webhook 
+          cd /home/ubuntu/backend/webhook/Server
           sudo docker pull arnabpal342002/code_review_webhook:latest
           sudo docker compose down
           sudo docker compose pull
