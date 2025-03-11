@@ -13,8 +13,8 @@ services:
       - backend
   
   app:
-    build: .
-    # image: 'arnabpal342002/code_review_webhook'
+    # build: .
+    image: 'arnabpal342002/code_review_webhook'
     ports:
       - 3000:3000
     env_file:
@@ -25,8 +25,8 @@ services:
       - backend
 
   migrate:
-    build: .
-    # image: 'arnabpal342002/code_review_webhook'
+    # build: .
+    image: 'arnabpal342002/code_review_webhook'
     container_name: db_migration
     env_file:
       - .env
