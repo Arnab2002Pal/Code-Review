@@ -1,8 +1,8 @@
 import dotenv from 'dotenv'
 import { Queue } from "bullmq"
 import { PrismaClient } from "@prisma/client"
-import { redisClient } from "../services/redis_config"
-import { AnalysedResult, FileReport, StatusCode, TaskData, User } from "../interfaces/interface"
+import { postCommentsQueue, redisClient, storeResultQueue } from "../services/redis_config"
+import { AnalysedResult, FileReport, StatusCode, TaskData, User, WaitingType } from "../interfaces/interface"
 import axios from "axios"
 
 dotenv.config()
@@ -29,6 +29,31 @@ export function createQueue(name: string, config: { host: string, port: number }
     return queue;
 }
 
+export async function waitForCompletion(id: any, type: string) {
+    let isCompleted = false;
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    if (WaitingType.COMMENT === type) {
+        while (!isCompleted) {
+            await delay(5000)
+            const commentTask = await postCommentsQueue.getJob(id);
+            const commentStatus = commentTask ? await commentTask.returnvalue?.status === StatusCode.SUCCESS : true;
+
+            isCompleted = commentStatus
+        }
+    } else if (WaitingType.STORE) {
+        while (!isCompleted) {
+            await delay(2000)
+
+            const storeDbTask = await storeResultQueue.getJob(id);
+            const storeDbStatus = storeDbTask ? await storeDbTask.getState() === 'completed' : true;
+
+            isCompleted = storeDbStatus
+        }
+
+    }
+}
+
 // DATABASE-CACHER RELATED FUNCTIONS
 export async function initialize_DatabaseCache(userId: any, id: any, analysedResult: any) {
     try {
@@ -44,7 +69,16 @@ export async function initialize_DatabaseCache(userId: any, id: any, analysedRes
         console.log('[STORE-WORKER] Initiallizing insert into DB and Cache');
 
         const [dbEntry, cacheStatus] = await Promise.all([
-            client.taskResult.create({ data: taskData }),
+            client.taskResult.update({
+                where: {
+                    taskId: Number(id)
+                },
+                data: {
+                    status: analysedResult.status,
+                    summary: analysedResult.code_summary.results,
+                    message: analysedResult.message
+                }
+            }),
             redisClient.setEx(`cached_job:${id}`, Number(process.env.CACHE_TIMING), JSON.stringify(taskData)),
         ]);
         console.log('[STORE-WORKER] Completed insert into DB and Cache');
@@ -89,7 +123,7 @@ export async function cacheData(taskID: number) {
 }
 
 // API RELATED FUNCTIONS
-async function processPRComment(full_name: string, pr_number: any, comments_url: string , comment: string, token: string) {
+async function processPRComment(comments_url: string, comment: string, token: string) {
     await axios.post(comments_url,
         {
             body: comment
@@ -131,7 +165,7 @@ async function processPRFiles(full_name: string, pr_number: any, files: FileRepo
                     continue;
                 }
 
-            } catch (error:any) {
+            } catch (error: any) {
                 console.error(`[COMMENT-Worker] Error processing line ${issue.line} of file: ${file.name} with status error: ${error.status}`);
                 continue;
             }
@@ -143,7 +177,7 @@ async function processPRFiles(full_name: string, pr_number: any, files: FileRepo
     console.log("[COMMENT-Worker] All files processed successfully.");
 }
 
-export function postAnalysisResult(user: User, data: AnalysedResult) {
+export async function postAnalysisResult(user: User, data: AnalysedResult) {
     const { files, summary } = data.results;
     const comment = `${summary.comment},
                 Total Files: ${summary.total_files},
@@ -151,8 +185,8 @@ export function postAnalysisResult(user: User, data: AnalysedResult) {
                 Critical Issues: ${summary.critical_issues}`
     const token = user.github_token;
     try {
-        processPRComment(user.full_name, user.pr_number, user.comments_url ,comment, token)
-        processPRFiles(user.full_name, user.pr_number, files, user.commit_id, token)
+        await processPRComment(user.comments_url, comment, token)
+        await processPRFiles(user.full_name, user.pr_number, files, user.commit_id, token)
 
         return {
             status: StatusCode.SUCCESS

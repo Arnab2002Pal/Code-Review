@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { StatusCode, User } from "../interfaces/interface";
-import { fetchQueue, postCommentsQueue, redisClient, storeResultQueue } from "../services/redis_config";
+import { ProgressStatus, StatusCode, User } from "../interfaces/interface";
+import { fetchQueue, redisClient } from "../services/redis_config";
 import { cacheData } from "../utils/utility_operation";
 
 const client = new PrismaClient()
@@ -15,19 +15,19 @@ const testRoute = async (req: Request, res: Response) => {
 
 const newUser = async (req: Request, res: Response) => {
     try {
-        const { email, github } = req.body;        
+        const { email, github } = req.body;
         const user = await client.user.findFirst({
             where: {
                 email
             }
         })
-        if(user) {
+        if (user) {
             return res.status(StatusCode.BAD_REQUEST).json({
                 success: false,
                 message: "User already exists"
             })
         }
-        
+
         const newUser = await client.user.create({
             data: {
                 email,
@@ -37,7 +37,7 @@ const newUser = async (req: Request, res: Response) => {
 
             }
         })
-        if(!newUser){
+        if (!newUser) {
             res.status(StatusCode.INTERNAL_ERROR).json({
                 success: false,
                 message: "Failed to create new user. Please try again later."
@@ -58,12 +58,12 @@ const newUser = async (req: Request, res: Response) => {
     }
 }
 
-const checkToken = async (req: Request, res: Response) => {    
+const checkToken = async (req: Request, res: Response) => {
     try {
         const email = req.query.email as string;
-        
-        if(!email){
-            res.status(StatusCode.NOT_FOUND).json({ 
+
+        if (!email) {
+            res.status(StatusCode.NOT_FOUND).json({
                 success: false,
                 message: "Email is required"
             })
@@ -82,10 +82,10 @@ const checkToken = async (req: Request, res: Response) => {
                 message: "User not found"
             })
             return
-        }        
+        }
         const isTokenPresent = existUser.githubToken ? true : false
 
-        if(isTokenPresent){
+        if (isTokenPresent) {
             res.status(StatusCode.SUCCESS).json({
                 success: true,
                 message: "Token is present"
@@ -96,7 +96,7 @@ const checkToken = async (req: Request, res: Response) => {
                 message: "Token is not present"
             })
         }
-        
+
 
     } catch (error) {
         res.status(StatusCode.INTERNAL_ERROR).json({
@@ -127,40 +127,26 @@ const analyzePR = async (req: Request, res: Response) => {
             });
             return
         }
-        const { diff_url, head, comments_url } = pull_request;
+        const { diff_url, head, comments_url, user } = pull_request;
         const { full_name } = repository
+        const {login, id } = user;
 
-        /*
-        Requirements:
-        -- comments_url: Adding comments to a Pull Request requires the following:
-        -   GitHub Personal Access Token (PAT)
-        -   Content-Type: application/json
-        -   Accept: application/vnd.github+json
-
-        -- Commenting on specific files requires:
-        -- https://api.github.com/repos/{owner}/{repo}/pulls/{number}/comments
-        -   GitHub Personal Access Token (PAT)
-        -   `commit_id`: The latest commit SHA
-        -   `body`: Comment content
-        -   `path`: File path in the PR
-        -   `line`: Line number for the comment
-        -   `side`: "LEFT" or "RIGHT" (diff side)
-        */
-
-        const user: User = {
+        const userInfo: User = {
             userId: userExist.id,
             full_name,
             pr_number,
             commit_id: head.sha,
             comments_url,
-            github_token: userExist.githubToken
+            github_token: userExist.githubToken,
+            github_username: login,
+            github_id: id
         };
 
         res.status(StatusCode.SUCCESS).json({
             message: "Webhook received successfully"
         });
 
-        const task = await fetchQueue.add("fetch-diff-task", { diff_url, user }, {
+        const task = await fetchQueue.add("fetch-diff-task", { diff_url, userInfo }, {
             attempts: 3,
             backoff: {
                 type: "exponential",
@@ -190,117 +176,140 @@ const analyzePR = async (req: Request, res: Response) => {
 
 const taskStatus = async (req: Request, res: Response) => {
     try {
-        const taskId: string = req.params.task_id;
-        const fetchjob = await fetchQueue.getJob(taskId);
-        const commentjob = await postCommentsQueue.getJob(taskId);
-        const storeJob = await storeResultQueue.getJob(taskId);
-        
-        const db_data = await client.taskResult.findUnique({
-            where: {
-                taskId: Number(taskId),
-            },
-        });
+        const userID: string = req.params.userID;
 
-        // If the job is not found and no data exists in the database, return a 404 error
-        if (!fetchjob && !db_data) {
+        const task = await client.taskResult.findFirst({
+            where:{
+                userId: userID
+            }
+        })
+
+        if(!task) {
             return res.status(StatusCode.NOT_FOUND).json({
                 success: false,
+                status: ProgressStatus.FAILED,
+                message: "Task not found. Please check the task ID and try again.",
+            });
+        }
+        
+        const taskID = task.taskId
+        
+        if (task.status === ProgressStatus.COMPLETED) {
+            return res.status(StatusCode.SUCCESS).json({
+                success: true,
+                status: ProgressStatus.COMPLETED,
+                task_id: taskID,
+                message: "Task completed successfully.",
+            });
+        }
+        const fetchjob = await fetchQueue.getJob(String(taskID));
+
+        // If the job is not found and no data exists in the database, return a 404 error
+        if (!fetchjob) {
+            return res.status(StatusCode.NOT_FOUND).json({
+                success: false,
+                status: ProgressStatus.FAILED,
                 message: "Task not found. Please check the task ID and try again.",
             });
         }
 
         let state: string | null = null;
-        let state1: string | null = null;
-        let state2: string | null = null;
 
-        // If the job exists, get its state
-        if (fetchjob && commentjob && storeJob) {
+        // // If the job exists, get its state
+        if (fetchjob) {
             state = await fetchjob.getState();
-            state1 = await commentjob.getState();
-            state2 = await storeJob.getState();
         }
-
-        console.log("Fetch:", state);
-        console.log("comment:", state1);
-        console.log("Store:", state2);
-        
 
         switch (state) {
             case "waiting":
             case "delayed":
                 return res.status(StatusCode.SUCCESS).json({
                     success: true,
-                    task_id: taskId,
+                    status: ProgressStatus.DELAYED,
+                    task_id: taskID,
                     message: "Your task has been added to the queue and is awaiting processing.",
                 });
 
             case "active":
                 return res.status(StatusCode.SUCCESS).json({
                     success: true,
-                    task_id: taskId,
+                    status: ProgressStatus.ACTIVE,
+                    task_id: taskID,
                     message: "Your task is currently being processed.",
                 });
 
             case "failed":
                 return res.status(StatusCode.SUCCESS).json({
                     success: false,
-                    task_id: taskId,
+                    status: ProgressStatus.FAILED,
+                    task_id: taskID,
                     message: fetchjob?.failedReason || "Your task has failed to process. Please try again.",
                 });
 
             default:
                 // If state is null or unknown, provide a fallback
-                if (!db_data) {
+                if (!task) {
                     return res.status(StatusCode.SUCCESS).json({
                         success: false,
-                        task_id: taskId,
+                        status: ProgressStatus.FAILED,
+                        task_id: taskID,
                         message: "Task completed, but no result found in the database.",
                     });
                 }
-
-                return res.status(StatusCode.SUCCESS).json({
-                    success: true,
-                    task_id: taskId,
-                    message: "Task completed successfully.",
-                });
         }
     } catch (error) {
         console.error("Error checking task status:", error);
 
         return res.status(StatusCode.INTERNAL_ERROR).json({
             success: false,
+            status: ProgressStatus.FAILED,
             message: "An error occurred while checking the task status. Please try again later.",
         });
     }
 };
 
 const resultPR = async (req: Request, res: Response) => {
-    const { task_id } = req.params
+    const { userID } = req.params
     try {
+        const task = await client.taskResult.findFirst({
+            where: {
+                userId: userID
+            }
+        })
 
-        const cache = await redisClient.get(`cached_job:${task_id}`)
-
-        if (cache) {
-            const parsed_cache = JSON.parse(cache);
-            return res.status(StatusCode.SUCCESS).json({
-                success: true,
-                task_id: parsed_cache.taskId,
-                summary: parsed_cache.summary,
-                message: parsed_cache.message,
+        if(!task) {
+            return res.status(StatusCode.NOT_FOUND).json({
+                success: false,
+                status: ProgressStatus.FAILED,
+                message: "Task not found. Please check the task ID and try again.",
             });
         }
 
-        const renew_cache = await cacheData(Number(task_id));
+        const cache = await redisClient.get(`cached_job:${task.taskId}`)
+
+        if (cache) {
+            const parsedCache = JSON.parse(cache);
+            return res.status(StatusCode.SUCCESS).json({
+                success: true,
+                type: "cached",
+                task_id: parsedCache.taskId,
+                summary: parsedCache.summary,
+                message: parsedCache.message,
+            });
+        }
+
+        const renewCache = await cacheData(Number(task.taskId));
 
         // Send the response to the user after caching
         return res.status(StatusCode.SUCCESS).json({
             success: true,
-            task_id: renew_cache.taskId,
-            summary: renew_cache.summary,
-            message: renew_cache.message,
+            type: "database",
+            task_id: renewCache.taskId,
+            summary: renewCache.summary,
+            message: renewCache.message,
         });
     } catch (error) {
-        console.error(error);
+        console.error("[SERVER] Error occured:",error);
         return res.status(StatusCode.INTERNAL_ERROR).json({
             success: false,
             message: "An error occurred while retrieving the task result. Please try again later."

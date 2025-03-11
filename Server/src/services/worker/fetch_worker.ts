@@ -3,15 +3,40 @@ import { Worker } from "bullmq";
 import { analyzePullRequest } from "../ai-agent";
 import { PrismaClient } from "@prisma/client";
 import { postCommentsQueue, redisConnection, storeResultQueue } from "../redis_config";
+import { waitForCompletion } from '../../utils/utility_operation';
+import { ProgressStatus, StatusCode, WaitingType } from '../../interfaces/interface';
 dotenv.config()
 
 const client = new PrismaClient()
 const mode = process.env.NODE_ENV?.trim()
 
 const fetchWorker = new Worker('code-analysis-queue', async job => {
-    const { diff_url, user } = job.data;
+    const { diff_url, userInfo } = job.data;
+    
+    try {
+        console.log("Db query");
+        const userExists = await client.user.findFirst({
+            where: {
+                githubUsername: userInfo.github_username,
+                githubId: userInfo.github_id
+            }
+        })
 
-    try {        
+        if(!userExists) {
+            console.log("[FETCH-WORKER] User not found. Skipping analysis.");
+            return;
+        }
+                
+        await client.taskResult.create({
+            data: {
+                userId: userExists.id,
+                taskId: Number(job.id!),
+                status: ProgressStatus.PENDING,
+                summary: {},
+                message: "Analysis started."
+            }
+        })
+        
         const analysedResult = await analyzePullRequest(diff_url)
             
         // If status is false
@@ -35,37 +60,43 @@ const fetchWorker = new Worker('code-analysis-queue', async job => {
             };
         }
         
-        const [commentTask, storeTask] = await Promise.all([
-            postCommentsQueue.add("post-comment-task", { user, analysedResult }, {
-                attempts: 3,
-                backoff: {
-                    type: "exponential",
-                    delay: 10000,
-                },
-                removeOnComplete: true,
-                removeOnFail: true
-            }),
+        const postComment = await postCommentsQueue.add("post-comment-task", { userInfo, analysedResult }, {
+            attempts: 3,
+            backoff: {
+                type: "exponential",
+                delay: 10000,
+            },
+            removeOnComplete: true,
+            removeOnFail: true
+        })
 
-            storeResultQueue.add("store-result-task", { userId: user.userId, taskId: job.id, analysedResult }, {
-                attempts: 3,
-                backoff: {
-                    type: "exponential",
-                    delay: 10000,
-                },
-                removeOnComplete: true,
-                removeOnFail: true
-            })
-        ]);
+        console.log("[FETCH-WORKER] Waiting till commenting is finished.");
+        await waitForCompletion(postComment.id, WaitingType.COMMENT)
+
+        const storeResult = await storeResultQueue.add("store-result-task", { userId: userInfo.userId, taskId: job.id, analysedResult }, {
+            attempts: 3,
+            backoff: {
+                type: "exponential",
+                delay: 10000,
+            },
+            removeOnComplete: {
+                age: 2000
+            },
+            removeOnFail: true
+        })
+        
+        console.log("[FETCH-WORKER] Waiting till storing DB is updated.");
+        await waitForCompletion(postComment.id, WaitingType.STORE)
 
         console.log('[FETCH-WORKER] All processes have been completed.');
         
-        return { 
-            status: "completed",
+        return {
+            status: StatusCode.SUCCESS,
             message: "Analysis successful, tasks created.",
             jobId: job.id,
-            commentTaskId: commentTask.id,
-            storeTaskId: storeTask.id 
-        };
+            postCommentTaskId: postComment.id,
+            storeTaskId: storeResult.id
+        }
     } catch (error) {
         console.error("[FETCH-WORKER] Error processing job:", error);
         throw Error;

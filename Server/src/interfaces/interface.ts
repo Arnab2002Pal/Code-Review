@@ -6,6 +6,20 @@ export enum StatusCode {
     INTERNAL_ERROR = 500
 }
 
+export enum ProgressStatus {
+    PENDING = "pending",
+    IN_PROGRESS = "in_progress",
+    COMPLETED = "completed",
+    ACTIVE = "active",
+    DELAYED = "delay",
+    FAILED = "failed"
+}
+
+export enum WaitingType {
+    COMMENT = "comment",
+    STORE = "store"
+}
+
 export interface GitHubPullRequest {
     repo_url: string;
     pr_number: number;
@@ -20,7 +34,7 @@ export interface Github_Response {
 export interface TaskData {
     userId: string,
     taskId: number,
-    status: boolean,
+    status: string,
     summary: any,
     message?: string
 }
@@ -60,4 +74,6 @@ export interface User {
     commit_id: string;
     comments_url: string;
     github_token: string;
+    github_username: string;
+    github_id: number;
 }

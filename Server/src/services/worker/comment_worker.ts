@@ -5,9 +5,9 @@ import { redisConnection } from "../redis_config";
 const mode = process.env.NODE_ENV?.trim()
 
 const commentWorker = new Worker("post-comments-queue", async job => {
-    const { user, analysedResult } = job.data    
+    const { userInfo, analysedResult } = job.data    
     try {        
-        return postAnalysisResult(user, analysedResult.code_summary)
+        return postAnalysisResult(userInfo, analysedResult.code_summary)
 
     } catch (error) {
         console.log("[COMMENT-Worker]:",error);

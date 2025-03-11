@@ -20,7 +20,7 @@ model User {
 model TaskResult {
   id        String   @id @default(uuid())
   taskId    Int      @unique
-  status    Boolean
+  status    String
   summary   Json
   message   String?
   createdAt DateTime @default(now())
