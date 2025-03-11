@@ -7,8 +7,8 @@ const webhookRouter = express.Router();
 apiRouter.get('/', testRoute)
 
 apiRouter.get('/checkToken', checkToken)
-apiRouter.get('/status/:task_id', taskStatus);
-apiRouter.get('/results/:task_id', resultPR)
+apiRouter.get('/status/:userID', taskStatus);
+apiRouter.get('/results/:userID', resultPR)
 
 apiRouter.post('/new-user', newUser);
 
