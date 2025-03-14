@@ -58,6 +58,10 @@ const newUser = async (req: Request, res: Response) => {
     }
 }
 
+const getUser = async (req: Request, res: Response) => {
+
+}
+
 const checkToken = async (req: Request, res: Response) => {
     try {
         const email = req.query.email as string;
@@ -131,6 +135,7 @@ const analyzePR = async (req: Request, res: Response) => {
         const { full_name } = repository
         const {login, id } = user;
 
+        // Add Repo Name to Database
         const userInfo: User = {
             userId: userExist.id,
             full_name,
@@ -320,6 +325,7 @@ const resultPR = async (req: Request, res: Response) => {
 export {
     testRoute,
     newUser,
+    getUser,
     checkToken,
     analyzePR,
     taskStatus,
