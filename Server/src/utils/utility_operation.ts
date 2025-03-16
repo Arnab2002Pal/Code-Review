@@ -55,11 +55,11 @@ export async function waitForCompletion(id: any, type: string) {
 }
 
 // DATABASE-CACHER RELATED FUNCTIONS
-export async function initialize_DatabaseCache(userId: any, id: any, analysedResult: any) {
+export async function initializeDatabaseCache(userId: any, id: any, analysedResult: any) {
     try {
         const taskData: TaskData = {
             userId: userId,
-            taskId: Number(id),
+            taskId: id,
             status: analysedResult.status,
             summary: analysedResult.code_summary.results,
             message: analysedResult.message
@@ -71,7 +71,7 @@ export async function initialize_DatabaseCache(userId: any, id: any, analysedRes
         const [dbEntry, cacheStatus] = await Promise.all([
             client.taskResult.update({
                 where: {
-                    taskId: Number(id)
+                    id: id
                 },
                 data: {
                     status: analysedResult.status,
@@ -92,13 +92,12 @@ export async function initialize_DatabaseCache(userId: any, id: any, analysedRes
         console.error("Error initializing database cache:", error);
         throw new Error("Failed to initialize database cache");
     }
-
 }
 
-export async function cacheData(taskID: number) {
+export async function cacheData(taskID: string) {
     const data = await client.taskResult.findUnique({
         where: {
-            taskId: taskID
+            id: taskID
         }
     })
 
@@ -108,7 +107,7 @@ export async function cacheData(taskID: number) {
 
     const taskData: TaskData = {
         userId: data.id,
-        taskId: data.taskId,
+        taskId: data.id,
         status: data.status,
         summary: data.summary,
         message: data.message || ""

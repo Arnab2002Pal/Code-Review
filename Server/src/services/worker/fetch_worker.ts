@@ -14,7 +14,6 @@ const fetchWorker = new Worker('code-analysis-queue', async job => {
     const { diff_url, userInfo } = job.data;
     
     try {
-        console.log("Db query");
         const userExists = await client.user.findFirst({
             where: {
                 githubUsername: userInfo.github_username,
@@ -27,10 +26,11 @@ const fetchWorker = new Worker('code-analysis-queue', async job => {
             return;
         }
                 
-        await client.taskResult.create({
+        const task = await client.taskResult.create({
             data: {
                 userId: userExists.id,
                 taskId: Number(job.id!),
+                repository: userInfo.repository,
                 status: ProgressStatus.PENDING,
                 summary: {},
                 message: "Analysis started."
@@ -73,7 +73,7 @@ const fetchWorker = new Worker('code-analysis-queue', async job => {
         console.log("[FETCH-WORKER] Waiting till commenting is finished.");
         await waitForCompletion(postComment.id, WaitingType.COMMENT)
 
-        const storeResult = await storeResultQueue.add("store-result-task", { userId: userInfo.userId, taskId: job.id, analysedResult }, {
+        const storeResult = await storeResultQueue.add("store-result-task", { userId: userInfo.userId, taskId: task.id, analysedResult }, {
             attempts: 3,
             backoff: {
                 type: "exponential",
