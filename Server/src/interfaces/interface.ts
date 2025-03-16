@@ -33,7 +33,7 @@ export interface Github_Response {
 
 export interface TaskData {
     userId: string,
-    taskId: number,
+    taskId: string,
     status: string,
     summary: any,
     message?: string
@@ -70,6 +70,7 @@ export interface AnalysedResult {
 export interface User {
     userId: string;
     full_name: string;
+    repository: string;
     pr_number: number;
     commit_id: string;
     comments_url: string;

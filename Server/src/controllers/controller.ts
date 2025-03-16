@@ -59,7 +59,52 @@ const newUser = async (req: Request, res: Response) => {
 }
 
 const getUser = async (req: Request, res: Response) => {
+    const {email} = req.params;
 
+    try {
+        const user = await client.user.findUnique({
+            where: {
+                email
+            }
+        })
+
+        if(!user){
+            res.status(StatusCode.NOT_FOUND).json({
+                success: false,
+                message: "User not found"
+            })
+            return
+        }
+
+        const userTask = await client.taskResult.findMany({
+            where: {
+                userId: user.id
+            }
+        })
+
+        if(!userTask){
+            res.status(StatusCode.NOT_FOUND).json({
+                success: false,
+                userId: user.id,
+                userTask: [],
+                message: "No tasks found for this user"
+            })
+            return;
+        }
+        res.status(StatusCode.SUCCESS).json({
+            success: true,
+            userId: user.id,
+            repository: userTask,
+        })
+        return;
+        
+    } catch (error) {
+        res.status(StatusCode.INTERNAL_ERROR).json({
+            success: false,
+            message: "An error occurred while fetching user. Please try again later."
+        })
+        return;
+    }
 }
 
 const checkToken = async (req: Request, res: Response) => {
@@ -101,7 +146,6 @@ const checkToken = async (req: Request, res: Response) => {
             })
         }
 
-
     } catch (error) {
         res.status(StatusCode.INTERNAL_ERROR).json({
             success: false,
@@ -111,7 +155,7 @@ const checkToken = async (req: Request, res: Response) => {
 }
 
 const analyzePR = async (req: Request, res: Response) => {
-    try {        
+    try {                
         const { action, number: pr_number, pull_request, repository } = req.body;
 
         // only 'opened' PR events are processed
@@ -132,12 +176,13 @@ const analyzePR = async (req: Request, res: Response) => {
             return
         }
         const { diff_url, head, comments_url, user } = pull_request;
-        const { full_name } = repository
+        const { name, full_name } = repository
         const {login, id } = user;
 
         // Add Repo Name to Database
         const userInfo: User = {
             userId: userExist.id,
+            repository: name,
             full_name,
             pr_number,
             commit_id: head.sha,
@@ -179,13 +224,24 @@ const analyzePR = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * This function retrieves the status of a task based on the provided user ID.
+ * It checks the task in the database and the corresponding job in the queue.
+ *
+ * @param {Request} req - The Express request object containing the user ID in the request parameters.
+ * @param {Response} res - The Express response object to send the status response.
+ *
+ * @returns {Promise<Response>} - A Promise that resolves to an Express response object.
+ *
+ * @throws Will throw an error if the task or job cannot be found or if an error occurs during processing.
+ */
 const taskStatus = async (req: Request, res: Response) => {
     try {
-        const userID: string = req.params.userID;
+        const taskId: string = req.params.taskID;
 
-        const task = await client.taskResult.findFirst({
+        const task = await client.taskResult.findUnique({
             where:{
-                userId: userID
+                id: taskId
             }
         })
 
@@ -196,9 +252,9 @@ const taskStatus = async (req: Request, res: Response) => {
                 message: "Task not found. Please check the task ID and try again.",
             });
         }
-        
+
         const taskID = task.taskId
-        
+
         if (task.status === ProgressStatus.COMPLETED) {
             return res.status(StatusCode.SUCCESS).json({
                 success: true,
@@ -220,7 +276,7 @@ const taskStatus = async (req: Request, res: Response) => {
 
         let state: string | null = null;
 
-        // // If the job exists, get its state
+        // If the job exists, get its state
         if (fetchjob) {
             state = await fetchjob.getState();
         }
@@ -290,7 +346,7 @@ const resultPR = async (req: Request, res: Response) => {
             });
         }
 
-        const cache = await redisClient.get(`cached_job:${task.taskId}`)
+        const cache = await redisClient.get(`cached_job:${task.id}`)
 
         if (cache) {
             const parsedCache = JSON.parse(cache);
@@ -303,7 +359,7 @@ const resultPR = async (req: Request, res: Response) => {
             });
         }
 
-        const renewCache = await cacheData(Number(task.taskId));
+        const renewCache = await cacheData(task.id);
 
         // Send the response to the user after caching
         return res.status(StatusCode.SUCCESS).json({

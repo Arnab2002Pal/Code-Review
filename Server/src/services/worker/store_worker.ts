@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { initialize_DatabaseCache } from "../../utils/utility_operation";
+import { initializeDatabaseCache } from "../../utils/utility_operation";
 import { redisClient, redisConnection } from "../redis_config";
 import { PrismaClient } from "@prisma/client";
 
@@ -10,7 +10,7 @@ const storeWorker = new Worker('store-result-queue', async (job) => {
     const { userId, taskId, analysedResult } = job.data;
     
     try {
-        return initialize_DatabaseCache(userId, taskId, analysedResult)
+        return initializeDatabaseCache(userId, taskId, analysedResult)
     } catch (error) {
         console.log("[STORE-WORKER] Error at Worker: ", error);
 

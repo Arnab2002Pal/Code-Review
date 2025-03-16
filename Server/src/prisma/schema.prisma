@@ -18,13 +18,14 @@ model User {
 }
 
 model TaskResult {
-  id        String   @id @default(uuid())
-  taskId    Int      @unique
-  status    String
-  summary   Json
-  message   String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  taskId      Int      @unique
+  repository  String
+  status      String
+  summary     Json
+  message     String?
+  createdAt   DateTime @default(now())
 
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
