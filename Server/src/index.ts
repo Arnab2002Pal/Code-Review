@@ -7,7 +7,12 @@ import cors from 'cors'
 dotenv.config()
 
 const app = express()
-app.use(cors())
+app.use(cors({
+    origin: ['http://localhost:3000'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+}))
 app.use(bodyParser.json())
 
 app.use('/webhook/v1', webhookRouter)

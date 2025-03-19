@@ -238,12 +238,16 @@ const analyzePR = async (req: Request, res: Response) => {
 const taskStatus = async (req: Request, res: Response) => {
     try {
         const taskId: string = req.params.taskID;
-
+        console.log(taskId);
+        
         const task = await client.taskResult.findUnique({
             where:{
                 id: taskId
             }
         })
+
+        console.log(task);
+        
 
         if(!task) {
             return res.status(StatusCode.NOT_FOUND).json({
@@ -269,8 +273,8 @@ const taskStatus = async (req: Request, res: Response) => {
         if (!fetchjob) {
             return res.status(StatusCode.NOT_FOUND).json({
                 success: false,
-                status: ProgressStatus.FAILED,
-                message: "Task not found. Please check the task ID and try again.",
+                status: ProgressStatus.EMPTY,
+                message: "Retry again! Not found in Cache.",
             });
         }
 

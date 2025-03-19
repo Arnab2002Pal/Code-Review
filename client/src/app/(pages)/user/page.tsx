@@ -4,12 +4,21 @@ import Table from '@/components/Table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import React, { useState } from 'react'
+import axios from 'axios'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
 import { FaCopy } from 'react-icons/fa'
 
 const User = () => {
   const webhook = "https://code-review.arnab-personal.tech/webhook/v1/analyzePR";
   const [copied, setCopied] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [userId, setUserId] = useState<string>()
+  const [repo, setRepo] = useState<any[]>([])
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const email = session?.user?.email
 
   const handleCopy = async () => {
     try {
@@ -21,14 +30,46 @@ const User = () => {
     }
   }
 
+  const getUser = async (email: string) => {
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/${email}`)
+    try {
+      if (!response) {
+        return
+      }
+      console.log(response.data);
+
+      setUserId(response.data.userId)
+      setRepo(response.data.repository)
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (status === 'loading') {
+      setLoading(true)
+      return;
+    }
+    if (status === 'unauthenticated') {
+      router.push('/')
+    }
+    getUser(email!)
+  }, [email])
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div className='w-full h-full'>
       <Navbar username='Arnab' />
       <div className=' w-[95vw] flex justify-around items-start mx-auto gap-2 mt-12'>
         <div className='bg-white h-full w-2/3 rounded-xl border-2 border-slate-200 p-4 flex flex-col gap-2'>
-          <Table />
+          <Table repo={repo} />
 
-        </div>
+        </div> 
         <div className='bg-white h-full rounded-xl border-2 border-slate-200 px-4 py-2 flex flex-col gap-2'>
           <Label className='w-40 text-base font-semibold'>
             Webhook URL :

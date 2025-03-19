@@ -12,7 +12,8 @@ export enum ProgressStatus {
     COMPLETED = "completed",
     ACTIVE = "active",
     DELAYED = "delay",
-    FAILED = "failed"
+    FAILED = "failed",
+    EMPTY = "empty"
 }
 
 export enum WaitingType {
