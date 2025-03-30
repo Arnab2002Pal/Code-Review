@@ -192,10 +192,6 @@ const analyzePR = async (req: Request, res: Response) => {
             github_id: id
         };
 
-        res.status(StatusCode.SUCCESS).json({
-            message: "Webhook received successfully"
-        });
-
         const task = await fetchQueue.add("fetch-diff-task", { diff_url, userInfo }, {
             attempts: 3,
             backoff: {
@@ -214,7 +210,9 @@ const analyzePR = async (req: Request, res: Response) => {
             return
         }
 
-        return;
+        return res.status(StatusCode.SUCCESS).json({
+            message: "Webhook received successfully"
+        });
     } catch (error: any) {
         console.error("Error processing webhook:", error);
         res.status(StatusCode.INTERNAL_ERROR).json({
@@ -238,15 +236,12 @@ const analyzePR = async (req: Request, res: Response) => {
 const taskStatus = async (req: Request, res: Response) => {
     try {
         const taskId: string = req.params.taskID;
-        console.log("taskStatus: 1-----",taskId);
         
         const task = await client.taskResult.findUnique({
             where:{
                 id: taskId
             }
         })
-
-        console.log("taskStatus: 2-----", task);
 
         if(!task) {
             return res.status(StatusCode.NOT_FOUND).json({

@@ -1,59 +1,51 @@
-import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 
-const POLLING_INTERVAL = 5000; // Poll every 5 seconds
+const POLLING_INTERVAL = 4000; // Poll every 4 seconds
 
 const Table = ({ repo }: { repo: any[] }) => {
-    const [repository, setRepository] = useState(repo)
+    const [repository, setRepository] = useState(repo);
 
     useEffect(() => {
-        setRepository(repo);
-    }, [repo]);
+        if (repository.length === 0) return; // No repos, stop polling
 
-    useEffect(() => {
         const fetchUpdatedStatus = async () => {
-            const pendingRepos = repository?.filter(item => item.status === 'pending')
+            const pendingRepos = repository.filter(item => item.status === 'pending' || item.status === 'active');
+            if (pendingRepos.length === 0) return; // All complete, stop polling
 
-            if (!pendingRepos.length) return;
-
-            const updatedRepoStatus = await Promise.all(
+            const updatedRepos = await Promise.all(
                 pendingRepos.map(async item => {
                     try {
-                        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/status/${item.id}`)
-                        return { ...item, status: response?.data?.status || item.status }
-                    } catch (error: any) {
-                        console.error("Error fetching repo status:", error);
+                        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/status/${item.id}`);
+                        return { ...item, status: data?.status || item.status };
+                    } catch {
                         return item;
                     }
                 })
-            )
+            );
 
-            setRepository(prev => prev.map(repo =>
-                updatedRepoStatus.find(updated => updated.id === repo.id) || repo
-            ));
-        }
+            setRepository(prev => prev.map(repo => updatedRepos.find(updated => updated.id === repo.id) || repo));
+        };
 
         const interval = setInterval(fetchUpdatedStatus, POLLING_INTERVAL);
-        return () => clearInterval(interval); // Cleanup on unmount
+        return () => clearInterval(interval);
     }, [repository]);
 
     return (
         <div className="relative overflow-x-auto">
-            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <table className="w-full text-sm text-left text-gray-500">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                     <tr>
-                        <th scope="col" className="px-6 py-3">Repository</th>
-                        <th scope="col" className="px-6 py-3">Status</th>
-                        <th scope="col" className="px-6 py-3">Summary</th>
+                        <th className="px-6 py-3">Repository</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Summary</th>
                     </tr>
                 </thead>
                 <tbody>
                     {repository.length > 0 ? (
                         repository.map((list, index) => (
-                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                                <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                    {list.repository}
-                                </th>
+                            <tr key={index} className="bg-white border-b">
+                                <td className="px-6 py-4">{list.repository}</td>
                                 <td className="px-6 py-4 capitalize">{list.status}</td>
                                 <td className="px-2 py-4">
                                     <button>View Summary</button>
@@ -62,15 +54,13 @@ const Table = ({ repo }: { repo: any[] }) => {
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                                No data available
-                            </td>
+                            <td colSpan={3} className="px-6 py-4 text-center text-gray-500">No data available</td>
                         </tr>
                     )}
                 </tbody>
             </table>
         </div>
-    )
-}
+    );
+};
 
-export default Table
+export default Table;
