@@ -238,7 +238,7 @@ const analyzePR = async (req: Request, res: Response) => {
 const taskStatus = async (req: Request, res: Response) => {
     try {
         const taskId: string = req.params.taskID;
-        console.log(taskId);
+        console.log("taskStatus: 1-----",taskId);
         
         const task = await client.taskResult.findUnique({
             where:{
@@ -246,8 +246,7 @@ const taskStatus = async (req: Request, res: Response) => {
             }
         })
 
-        console.log(task);
-        
+        console.log("taskStatus: 2-----", task);
 
         if(!task) {
             return res.status(StatusCode.NOT_FOUND).json({
