@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
+import {Loading} from '@/components/Loading'
 
 const Token = () => {
     const { data: session, status } = useSession()
@@ -30,11 +31,17 @@ const Token = () => {
                     router.push('/user');
                     return;
                 }
-            } catch (error: any) {
-                if (error.response?.status === 404) {
-                    console.warn("No token found for this email. User might be new.");
+            } catch (error: unknown) {
+                if (axios.isAxiosError(error)) {
+                    if (error.response?.status === 404) {
+                        console.warn("No token found for this email. User might be new.");
+                    } else {
+                        console.error("Axios error:", error.message);
+                    }
+                } else if (error instanceof Error) {
+                    console.error("Unexpected error:", error.message);
                 } else {
-                    console.error("Error checking token:", error.message);
+                    console.error("An unknown error occurred.");
                 }
             } finally {
                 setLoading(false);
@@ -42,15 +49,11 @@ const Token = () => {
         };
 
         checkUserToken();
-    }, [status, email]);
+    }, [status, email, router]);
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="text-primary" role="status">
-                    <span className="sr-only">Loading...</span>
-                </div>
-            </div>
+           <Loading/>
         );
     }
 

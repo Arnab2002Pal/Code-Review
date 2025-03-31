@@ -102,7 +102,8 @@ const fetchWorker = new Worker('code-analysis-queue', async job => {
         throw Error;
     }
 }, {
-    connection: redisConnection
+    connection: redisConnection,
+    concurrency: 5
 })
 
 fetchWorker.on("ready", () => {
