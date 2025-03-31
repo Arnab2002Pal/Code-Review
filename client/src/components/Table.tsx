@@ -1,32 +1,11 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { ModalLoading } from "./Loading";
+import { Repo, Summary } from "@/interfaces/interface";
 
 const POLLING_INTERVAL = 4000;
 
-interface Summary {
-    files: Files[];
-    summary: {
-        comment: string;
-        critical_issues: number;
-        total_files: number;
-        total_issues: number;
-    };
-}
-
-interface Files {
-    issues: Issue[];
-    name: string;
-}
-
-interface Issue {
-    description: string;
-    line: number;
-    suggestion: string;
-    type: string;
-}
-
-const Table = ({ repo }: { repo: any[] }) => {
+const Table = ({ repo }: { repo: Repo[] }) => {
     const [repository, setRepository] = useState(repo);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [open, setOpen] = useState(false);
