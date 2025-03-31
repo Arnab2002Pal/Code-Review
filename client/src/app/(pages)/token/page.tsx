@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
+import {Loading} from '@/components/Loading'
 
 const Token = () => {
     const { data: session, status } = useSession()
@@ -46,11 +47,7 @@ const Token = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="text-primary" role="status">
-                    <span className="sr-only">Loading...</span>
-                </div>
-            </div>
+           <Loading/>
         );
     }
 

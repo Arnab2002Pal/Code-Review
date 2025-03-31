@@ -328,11 +328,12 @@ const taskStatus = async (req: Request, res: Response) => {
 };
 
 const resultPR = async (req: Request, res: Response) => {
-    const { userID } = req.params
+    const { taskID } = req.params
+    
     try {
         const task = await client.taskResult.findFirst({
             where: {
-                userId: userID
+                id: taskID
             }
         })
 
