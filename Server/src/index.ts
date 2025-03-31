@@ -8,7 +8,7 @@ dotenv.config()
 
 const app = express()
 app.use(cors({
-    origin: ['http://localhost:3000'],
+    origin: ['http://localhost:3000', 'https://auto-reviewer.arnab-personal.tech'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
