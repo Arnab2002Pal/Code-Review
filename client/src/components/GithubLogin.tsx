@@ -1,5 +1,4 @@
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation';
 import React from 'react'
 import { FaGithub } from "react-icons/fa";
 
@@ -7,7 +6,6 @@ const GithubLogin = () => {
     const handleSignIn = async () => {
         await signIn("github", { callbackUrl: '/token'});
     };
-    const router = useRouter()
     return (
         <div className="w-full  flex justify-center items-center gap-6 mx-20">
             {/* Information Section */}

@@ -5,6 +5,7 @@ import Table from '@/components/Table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Repo } from '@/interfaces/interface'
 import axios from 'axios'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -12,11 +13,10 @@ import React, { useEffect, useState } from 'react'
 import { FaCopy } from 'react-icons/fa'
 
 const User = () => {
-  const webhook = "https://code-review.arnab-personal.tech/webhook/v1/analyzePR";
+  const webhook = process.env.NEXT_PUBLIC_WEBHOOK_URL as string;
   const [copied, setCopied] = useState(false)
-  const [loading, setLoading] = useState(true) // Start as loading
-  const [userId, setUserId] = useState<string | null>(null)
-  const [repo, setRepo] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [repo, setRepo] = useState<Repo[]>([])
   const router = useRouter()
   const { data: session, status } = useSession()
 
@@ -27,7 +27,6 @@ const User = () => {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/${session.user.email}`)
         if (response?.data) {
-          setUserId(response.data.userId)
           setRepo(response.data.repository || [])
         }
       } catch (error) {
@@ -44,7 +43,7 @@ const User = () => {
     } else if (status === 'unauthenticated') {
       router.push('/');
     }
-  }, [status, session?.user?.email]);
+  }, [status, session?.user?.email, router]);
 
   if (loading) {
     return <Loading/>
